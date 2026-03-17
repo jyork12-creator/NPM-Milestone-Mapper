@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NPM Milestone Feedback Analyzer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --surface: #181c27;
+    --surface2: #1e2333;
+    --border: #2a3050;
+    --accent: #3b82f6;
+    --purple: #8b5cf6;
+    --green: #10b981;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --teal: #0891b2;
+    --text: #e8ecf5;
+    --muted: #8892aa;
+    --dim: #545e78;
+    --r: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* ── Header ── */
+  .hdr {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .hdr-left { display: flex; align-items: center; gap: 14px; }
+  .logo {
+    width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    display: flex; align-items: center; justify-content: center; font-size: 20px;
+  }
+  .hdr h1 { font-size: 16px; font-weight: 600; }
+  .hdr p  { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+  /* ── API Key banner ── */
+  #key-banner {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 28px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  #key-banner label { font-size: 12px; color: var(--muted); white-space: nowrap; font-weight: 500; }
+  #key-banner input {
+    flex: 1; min-width: 260px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 7px;
+    color: var(--text); padding: 7px 12px;
+    font-family: inherit; font-size: 13px; outline: none;
+  }
+  #key-banner input:focus { border-color: var(--accent); }
+  .key-status { font-size: 11px; white-space: nowrap; }
+  .key-status.ok  { color: var(--green); }
+  .key-status.missing { color: var(--amber); }
+
+  /* ── Main layout ── */
+  .wrap { max-width: 960px; margin: 0 auto; padding: 22px 18px; }
+
+  /* ── Steps ── */
+  .steps { display: flex; align-items: center; gap: 4px; margin-bottom: 20px; flex-wrap: wrap; }
+  .step { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 8px; opacity: .35; transition: opacity .3s; }
+  .step.active { opacity: 1; }
+  .step.done   { opacity: .7; }
+  .step-n {
+    width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+    background: var(--surface2); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; transition: all .3s;
+  }
+  .step.active .step-n { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .step.done   .step-n { background: var(--green);  border-color: var(--green);  color: #fff; }
+  .step-lbl { font-size: 12px; font-weight: 500; color: var(--muted); }
+  .step.active .step-lbl { color: var(--text); }
+  .arr { color: var(--dim); font-size: 13px; }
+
+  /* ── Two-col grid ── */
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  @media (max-width: 620px) { .grid { grid-template-columns: 1fr; } }
+
+  /* ── Card ── */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 18px; }
+  .card-lbl {
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em;
+    color: var(--muted); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── Record ── */
+  .rec-center { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 6px 0; }
+  .timer { font-family: 'DM Serif Display', serif; font-size: 30px; color: var(--text); letter-spacing: .04em; }
+  .meter {
+    width: 100%; height: 26px; background: var(--bg); border-radius: 6px;
+    display: flex; align-items: center; padding: 0 3px; gap: 2px; overflow: hidden;
+  }
+  .seg { flex: 1; height: 10px; border-radius: 2px; background: var(--border); transition: background .08s, height .08s; }
+  .rec-btn {
+    width: 74px; height: 74px; border-radius: 50%; border: none; cursor: pointer;
+    font-size: 28px; background: var(--red); color: #fff;
+    box-shadow: 0 4px 20px rgba(239,68,68,.3);
+    transition: transform .2s, box-shadow .2s;
+  }
+  .rec-btn:hover:not(:disabled) { transform: scale(1.06); box-shadow: 0 6px 26px rgba(239,68,68,.45); }
+  .rec-btn.on { animation: pulse 1.5s infinite; }
+  .rec-btn:disabled { opacity: .35; cursor: not-allowed; }
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 4px 20px rgba(239,68,68,.3), 0 0 0 0 rgba(239,68,68,.4); }
+    50%      { box-shadow: 0 4px 20px rgba(239,68,68,.4), 0 0 0 14px rgba(239,68,68,0); }
+  }
+  .rec-st { font-size: 12px; color: var(--muted); text-align: center; line-height: 1.4; }
+
+  /* ── Live preview ── */
+  .live {
+    background: var(--bg); border: 1px dashed var(--border); border-radius: 8px;
+    padding: 9px 11px; font-size: 12px; color: var(--dim); font-style: italic;
+    min-height: 50px; line-height: 1.6; word-break: break-word;
+    margin-top: 8px; transition: border-color .3s;
+  }
+  .live.on { border-color: var(--red); color: var(--text); font-style: normal; }
+
+  /* ── Textarea ── */
+  textarea {
+    width: 100%; min-height: 168px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); padding: 10px 12px; font-family: inherit; font-size: 13px;
+    resize: vertical; outline: none; line-height: 1.7; transition: border-color .2s;
+  }
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--dim); }
+
+  /* ── Buttons ── */
+  .btn-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  button {
+    padding: 7px 16px; border-radius: 8px; border: 1px solid var(--border);
+    background: transparent; color: var(--text); font-family: inherit; font-size: 13px;
+    cursor: pointer; transition: background .15s; display: inline-flex; align-items: center; gap: 6px;
+  }
+  button:hover:not(:disabled) { background: var(--surface2); }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-primary { background: var(--accent) !important; border-color: var(--accent) !important; color: #fff !important; font-weight: 600; }
+  .btn-primary:hover:not(:disabled) { background: #2563eb !important; border-color: #2563eb !important; }
+
+  .analyze-wrap { display: flex; justify-content: center; margin: 4px 0 20px; }
+  .analyze-btn  { padding: 12px 38px; font-size: 15px; border-radius: 10px; }
+
+  /* ── Tips / errors ── */
+  .tip {
+    font-size: 11px; color: var(--dim); margin-top: 9px;
+    padding: 7px 10px; background: var(--surface2);
+    border-radius: 6px; border-left: 2px solid var(--border); line-height: 1.5;
+  }
+  .tip.warn  { border-left-color: var(--amber); color: #c8a870; }
+  .err-box {
+    padding: 10px 14px; background: rgba(239,68,68,.1);
+    border: 1px solid rgba(239,68,68,.3); border-radius: 8px;
+    color: #f87171; font-size: 13px; margin-top: 10px;
+  }
+
+  /* ── Spinner ── */
+  .spin {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,.3); border-top-color: #fff;
+    border-radius: 50%; animation: sp .7s linear infinite; flex-shrink: 0;
+  }
+  @keyframes sp { to { transform: rotate(360deg); } }
+
+  /* ── Results ── */
+  .summary {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+    padding: 18px; margin-bottom: 14px; display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-start;
+  }
+  .stat { display: flex; flex-direction: column; gap: 3px; }
+  .stat-v { font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--accent); line-height: 1; }
+  .stat-l { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .vdiv   { width: 1px; background: var(--border); align-self: stretch; }
+
+  .obs { flex: 1; min-width: 160px; display: flex; flex-direction: column; gap: 8px; }
+  .obs-txt { font-size: 13px; color: var(--text); line-height: 1.6; }
+  .chips  { display: flex; flex-wrap: wrap; gap: 5px; }
+  .chip   { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 11px; border: 1px solid; }
+  .chip-g { background: rgba(16,185,129,.1); border-color: rgba(16,185,129,.3); color: #34d399; }
+  .chip-a { background: rgba(245,158,11,.1); border-color: rgba(245,158,11,.3); color: #fbbf24; }
+
+  .mcard  { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; margin-bottom: 10px; }
+  .mhead  { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); background: var(--surface2); }
+  .mname  { font-weight: 600; font-size: 14px; }
+  .msub   { font-size: 11px; margin-top: 2px; }
+  .lvl-badge { display: flex; align-items: center; gap: 8px; }
+  .ldots  { display: flex; gap: 3px; }
+  .ldot   { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+  .lnum   { font-family: 'DM Serif Display', serif; font-size: 20px; min-width: 28px; text-align: right; }
+
+  .mbody  { padding: 12px 16px; display: flex; flex-direction: column; gap: 9px; }
+  .slbl   { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--dim); margin-bottom: 3px; }
+  .evid   {
+    font-style: italic; color: var(--muted); font-size: 12px;
+    padding: 6px 10px; border-left: 2px solid var(--border);
+    background: var(--surface2); border-radius: 0 6px 6px 0; line-height: 1.6;
+  }
+  .achip  { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 11px; border: 1px solid; margin: 2px 3px 2px 0; line-height: 1.4; }
+  .gitem  {
+    display: flex; align-items: flex-start; gap: 8px; padding: 7px 11px;
+    background: rgba(245,158,11,.07); border: 1px solid rgba(245,158,11,.2);
+    border-radius: 8px; font-size: 12px; color: #fbbf24; line-height: 1.5;
+  }
+  .rat    { font-size: 12px; color: var(--muted); line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="logo">🩺</div>
+    <div>
+      <h1>NPM Milestone Feedback Analyzer</h1>
+      <p>Record · Transcribe (free) · Map to ACGME Neonatal-Perinatal Medicine Milestones 2.0</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ API KEY BANNER ══ -->
+<div id="key-banner">
+  <label for="apiKey">🔑 Anthropic API Key</label>
+  <input type="password" id="apiKey" placeholder="sk-ant-api03-…" autocomplete="off" oninput="saveKey()" />
+  <button onclick="toggleKeyVis()" style="padding:6px 12px;font-size:12px;" title="Show/hide key">👁</button>
+  <span class="key-status missing" id="keyStatus">No key saved</span>
+  <button onclick="clearKey()" style="padding:6px 12px;font-size:12px;color:#f87171;border-color:rgba(239,68,68,.3)">Clear key</button>
+</div>
+
+<!-- ══ MAIN ══ -->
+<div class="wrap">
+
+  <!-- Steps -->
+  <div class="steps">
+    <div class="step active" id="step1"><div class="step-n">1</div><span class="step-lbl">Record</span></div>
+    <span class="arr">›</span>
+    <div class="step" id="step2"><div class="step-n">2</div><span class="step-lbl">Transcript</span></div>
+    <span class="arr">›</span>
+    <div class="step" id="step3"><div class="step-n">3</div><span class="step-lbl">Analyze</span></div>
+    <span class="arr">›</span>
+    <div class="step" id="step4"><div class="step-n">4</div><span class="step-lbl">Results</span></div>
+  </div>
+
+  <!-- Grid -->
+  <div class="grid">
+
+    <!-- Record card -->
+    <div class="card">
+      <div class="card-lbl"><div class="dot" style="background:var(--red)"></div>Step 1 — Record &amp; Transcribe</div>
+      <div class="rec-center">
+        <div class="timer" id="tmr">0:00</div>
+        <div class="meter" id="meter">
+          <div class="seg" id="m0"></div><div class="seg" id="m1"></div><div class="seg" id="m2"></div><div class="seg" id="m3"></div>
+          <div class="seg" id="m4"></div><div class="seg" id="m5"></div><div class="seg" id="m6"></div><div class="seg" id="m7"></div>
+          <div class="seg" id="m8"></div><div class="seg" id="m9"></div><div class="seg" id="m10"></div><div class="seg" id="m11"></div>
+          <div class="seg" id="m12"></div><div class="seg" id="m13"></div><div class="seg" id="m14"></div><div class="seg" id="m15"></div>
+        </div>
+        <button class="rec-btn" id="recBtn" onclick="toggleRec()">🎙</button>
+        <div class="rec-st" id="recSt">Click to start recording</div>
+      </div>
+      <div style="margin-top:10px">
+        <div class="slbl" style="margin-bottom:4px">Live preview</div>
+        <div class="live" id="liveBox">Transcript appears here as you speak…</div>
+      </div>
+      <div id="recErr"></div>
+      <div class="tip" id="browserTip">Uses your browser's free built-in speech recognition — no API key needed for transcription. Works in <strong>Chrome</strong> or <strong>Edge</strong>.</div>
+    </div>
+
+    <!-- Transcript card -->
+    <div class="card" style="display:flex;flex-direction:column">
+      <div class="card-lbl"><div class="dot" style="background:var(--purple)"></div>Step 2 — Review &amp; Edit Transcript</div>
+      <textarea id="tbox" placeholder="Transcript builds here while recording. You can also paste text directly to skip recording."></textarea>
+      <div class="btn-row">
+        <button onclick="clearTx()">Clear</button>
+        <button onclick="resetAll()">Reset all</button>
+      </div>
+      <div class="tip">Fully editable — fix any recognition errors before analyzing.</div>
+    </div>
+
+  </div><!-- /grid -->
+
+  <!-- Analyze button -->
+  <div class="analyze-wrap">
+    <button class="btn-primary analyze-btn" id="aBtn" onclick="doAnalyze()" disabled>⚡ Analyze Milestones</button>
+  </div>
+
+  <div id="analyzeErr"></div>
+  <div id="results"></div>
+
+</div><!-- /wrap -->
+
+<script>
+// ══════════════════════════════════════════════
+//  API KEY MANAGEMENT
+// ══════════════════════════════════════════════
+const KEY_STORE = 'npm_analyzer_api_key';
+
+function loadKey() {
+  const k = localStorage.getItem(KEY_STORE) || '';
+  document.getElementById('apiKey').value = k;
+  updateKeyStatus(k);
+}
+
+function saveKey() {
+  const k = document.getElementById('apiKey').value.trim();
+  if (k) localStorage.setItem(KEY_STORE, k);
+  else    localStorage.removeItem(KEY_STORE);
+  updateKeyStatus(k);
+}
+
+function updateKeyStatus(k) {
+  const el = document.getElementById('keyStatus');
+  if (k && k.startsWith('sk-ant')) {
+    el.textContent = '✓ Key saved';
+    el.className = 'key-status ok';
+  } else if (k) {
+    el.textContent = '⚠ Key format looks off';
+    el.className = 'key-status missing';
+  } else {
+    el.textContent = 'No key saved';
+    el.className = 'key-status missing';
+  }
+}
+
+function clearKey() {
+  localStorage.removeItem(KEY_STORE);
+  document.getElementById('apiKey').value = '';
+  updateKeyStatus('');
+}
+
+function toggleKeyVis() {
+  const inp = document.getElementById('apiKey');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function getKey() { return localStorage.getItem(KEY_STORE) || document.getElementById('apiKey').value.trim(); }
+
+// ══════════════════════════════════════════════
+//  MILESTONE DATA
+// ══════════════════════════════════════════════
+const MS = [
+  {d:"Patient Care",s:"PC1",n:"Neonatal and Maternal History",l:["Gathers information following a template","Adapts the template to filter and prioritize pertinent positives and negatives","Gathers and synthesizes the history for uncomplicated or typical presentations","Gathers and synthesizes the history for complicated or atypical presentations, including protected family health information","Synthesizes and reappraises the history incorporating subtle clues for potentially rare presentations"]},
+  {d:"Patient Care",s:"PC2",n:"Physical Exam",l:["Performs a physical examination based on a template","Performs a complete physical examination and identifies variants and abnormal findings","Adapts the physical examination based on gestational age, patient status, and clinical acuity to build a differential diagnosis","Synthesizes and reappraises physical examination information to narrow the differential diagnoses","Detects and integrates subtle physical examination findings to distinguish nuances among competing diagnoses"]},
+  {d:"Patient Care",s:"PC3",n:"Organization and Prioritization of Patient Care",l:["Organizes patient care for an individual patient","Organizes patient care responsibilities for multiple patients","Prioritizes and delegates simultaneous care of patients; triages urgent and emergent issues","Efficiently prioritizes and delegates patient care, maintains situational awareness, and anticipates urgent issues","Serves as a role model and coach for balancing patient care responsibilities and unit needs"]},
+  {d:"Patient Care",s:"PC4",n:"Clinical Reasoning",l:["Uses pattern recognition to formulate a broad differential diagnosis","Develops illness scripts and formulates a holistic patient assessment","Refines illness scripts while using strategies to identify cognitive bias","Reappraises illness scripts in real time while using strategies to minimize cognitive bias","Serves as a role model in clinical reasoning and strategies to minimize cognitive bias"]},
+  {d:"Patient Care",s:"PC5",n:"Disease Management in Neonatal Care",l:["Develops and implements care plans for patients with a low level of acuity/complexity","Develops and implements care plans for patients with a high level of acuity/complexity","Coordinates and implements multidisciplinary care plans for high acuity/complexity patients","Manages patients with multiple levels of acuity/complexity while anticipating future needs","Role models and coaches others in complex multidisciplinary care while anticipating future needs"]},
+  {d:"Patient Care",s:"PC6",n:"Procedures",l:["Performs simple procedures with assistance; recognizes common complications","Performs complex procedures with assistance; recognizes uncommon complications","Performs complex procedures; anticipates, recognizes, and manages common complications","Adapts technique based on patient acuity and anatomy; manages uncommon complications","Is recognized as a procedural expert"]},
+  {d:"Patient Care",s:"PC7",n:"Emergency Stabilization",l:["Identifies unstable patients and performs basic interventions","Identifies patients with acute deterioration and initiates advanced resuscitation measures","Leads resuscitations including critical decision making and anticipates next steps","Integrates family and support services while leading resuscitations","Coaches others to lead resuscitations while integrating family and support services"]},
+  {d:"Patient Care",s:"PC8",n:"Discharge from the NICU",l:["Identifies patient readiness and prepares the patient for discharge","Makes discharge decisions for low-complexity patients and addresses family resources","Partners with family in discharge planning for moderate complexity, coordinating multidisciplinary follow-up","Partners with family in discharge planning for high-complexity patients, coordinating multidisciplinary follow-up","Role models partnering with families in discharging high-complexity patients"]},
+  {d:"Medical Knowledge",s:"MK1",n:"Neonatal-Perinatal Medical Knowledge",l:["Demonstrates basic knowledge of normal maternal-fetal and neonatal physiology","Demonstrates knowledge of maternal-fetal and neonatal pathophysiology","Applies knowledge of pathophysiology of common and typical conditions to guide patient care","Integrates knowledge of pathophysiology of complicated and atypical conditions to guide patient care","Is recognized as an expert in maternal-fetal and neonatal pathophysiology"]},
+  {d:"Medical Knowledge",s:"MK2",n:"Diagnostic Evaluation",l:["Demonstrates knowledge of diagnostic evaluations","Demonstrates knowledge of risks, benefits, indications, and alternatives to common diagnostic evaluations","Applies knowledge of diagnostic evaluations based on risks, benefits, and limitations to patient care","Applies knowledge of diagnostic evaluations including pre-test probability to achieve high-value care","Role models diagnostic evaluation that achieves high-value care"]},
+  {d:"Systems-Based Practice",s:"SBP1",n:"Patient Safety",l:["Demonstrates knowledge of common patient safety events and how to report them","Identifies system factors that lead to patient safety events; reports through institutional systems","Participates in analysis and disclosure of patient safety events","Conducts analysis of patient safety events and offers error prevention strategies; discloses to families","Actively engages teams to modify systems to prevent patient safety events; role models disclosure"]},
+  {d:"Systems-Based Practice",s:"SBP2",n:"Quality Improvement",l:["Demonstrates knowledge of basic quality improvement methodologies and metrics","Describes local quality improvement initiatives","Participates in local quality improvement initiatives","Demonstrates skills required to identify, develop, implement, and analyze a quality improvement project","Creates, implements, and assesses quality improvement initiatives at the institutional or community level"]},
+  {d:"Systems-Based Practice",s:"SBP3",n:"System Navigation — Coordination of Care",l:["Lists interprofessional individuals involved in patient's care coordination","Coordinates care in routine clinical situations incorporating interprofessional teams","Coordinates care in complex clinical situations effectively utilizing interprofessional teams","Coordinates interprofessional patient-centered care across disciplines, actively assisting families","Coaches others in interprofessional patient-centered care coordination"]},
+  {d:"Systems-Based Practice",s:"SBP4",n:"System Navigation — Transitions in Care",l:["Uses a standard template for transitions of care/hand-offs","Adapts a standard template for safe and effective transitions in routine clinical situations","Performs safe and effective transitions in complex clinical situations ensuring closed-loop communication","Performs and advocates for safe and effective transitions within and across health care delivery systems","Coaches others in improving transitions of care to optimize patient outcomes"]},
+  {d:"Systems-Based Practice",s:"SBP5",n:"Population and Community Health",l:["Demonstrates awareness of population and community health needs and disparities","Identifies specific population and community health needs and disparities; identifies local resources","Uses local resources effectively to meet needs and reduce health disparities","Adapts practice to provide for needs and reduce health disparities of a specific population","Advocates at local, regional, or national level for populations with health care disparities"]},
+  {d:"Systems-Based Practice",s:"SBP6",n:"Physician Role in Health Care Systems",l:["Engages in discussions about cost-conscious care and key components of the health care delivery system","Identifies relationships between the delivery system, cost-conscious care, and impact on patient care","Discusses need for changes in clinical approaches based on evidence, outcomes, and cost-effectiveness","Advocates for the promotion of safe, quality, and high-value care","Coaches others to promote safe, quality, and high-value care across health care systems"]},
+  {d:"Practice-Based Learning and Improvement",s:"PBLI1",n:"Evidence-Based and Informed Practice",l:["Develops an answerable clinical question and accesses available evidence, with guidance","Independently articulates clinical question and accesses available evidence","Locates and applies evidence, integrated with patient preference, to the care of patients","Critically appraises and applies evidence even in the face of uncertainty to guide care for individual patients","Coaches others to critically appraise and apply evidence for complex patients"]},
+  {d:"Practice-Based Learning and Improvement",s:"PBLI2",n:"Reflective Practice and Commitment to Personal Growth",l:["Participates in feedback sessions; develops goals with assistance; demonstrates openness to feedback","Designs a learning plan based on goals, feedback, and performance data with assistance; seeks feedback episodically","Designs and implements a learning plan by reflecting on gaps between expectations and performance; seeks feedback consistently","Adapts learning plan using long-term professional goals, self-reflection, and performance data","Role models seeking and incorporating feedback; demonstrates continuous self-reflection and coaches others"]},
+  {d:"Professionalism",s:"PROF1",n:"Professional Behavior",l:["Identifies expected professional behaviors and potential triggers for lapses","Demonstrates professional behavior with occasional lapses; demonstrates accountability with guidance","Maintains professional behavior in complex or stressful situations; fully engages in patient care","Recognizes situations that may trigger professionalism lapses and intervenes; exhibits a sense of duty","Models professional behavior and coaches others; extends the role of the neonatologist beyond patient care"]},
+  {d:"Professionalism",s:"PROF2",n:"Ethical Principles",l:["Demonstrates knowledge of ethical principles underlying informed consent, surrogate decision making, confidentiality, and error disclosure","Applies ethical principles in common situations","Analyzes complex situations using ethical principles; seeks help when needed","Manages and seeks to resolve ethical dilemmas using appropriate resources","Called upon to consult in complex ethical dilemmas; identifies system-level factors that exacerbate ethical issues"]},
+  {d:"Professionalism",s:"PROF3",n:"Accountability/Conscientiousness",l:["Performs tasks and responsibilities with prompting","Performs tasks and responsibilities in a timely manner in routine situations","Performs tasks and responsibilities thoroughly and timely in complex or stressful situations","Coaches others to ensure tasks are completed thoroughly and timely in complex situations","Creates strategies to enhance others' ability to efficiently complete tasks and responsibilities"]},
+  {d:"Professionalism",s:"PROF4",n:"Well-Being",l:["Recognizes the importance of addressing personal and professional well-being","Describes institutional resources that promote well-being; recognizes factors that impact well-being","Describes interactions between institutional and personal factors that impact well-being","Advanced application of understanding interactions between institutional and personal factors","Coaches and supports colleagues to optimize well-being at the team, program, or institutional level"]},
+  {d:"Interpersonal and Communication Skills",s:"ICS1",n:"Family-Centered Communication",l:["Demonstrates respect and attempts to establish rapport; attempts to adjust communication based on family expectations","Establishes a therapeutic relationship in straightforward encounters; adjusts communication to mitigate barriers","Establishes a culturally competent therapeutic relationship; communicates with sensitivity, elicits family values","Establishes therapeutic relationships in complex encounters including ambiguity/conflict; uses shared decision making","Mentors others in positive therapeutic relationships; models and coaches others in family-centered communication"]},
+  {d:"Interpersonal and Communication Skills",s:"ICS2",n:"Interprofessional and Team Communication",l:["Respectfully requests a consultation with guidance; identifies members of the interprofessional team","Clearly and concisely requests consultation communicating patient information; participates within the team","Formulates a specific question for consultation and tailors communication strategy; uses bi-directional communication","Coordinates consultant recommendations to optimize patient care; facilitates interprofessional team communication","Maintains collaborative relationship with referring providers; coaches others in effective interprofessional communication"]},
+  {d:"Interpersonal and Communication Skills",s:"ICS3",n:"Communication within Health Care Systems",l:["Records accurate information in the patient record; responds to multiple forms of communication","Records accurate and timely information in the patient record; selects appropriate method of communication with prompting","Concisely documents diagnostic and therapeutic reasoning; aligns communication type with message based on urgency","Documents diagnostic and therapeutic reasoning including anticipatory guidance; demonstrates exemplary communication","Models and coaches others in documenting diagnostic and therapeutic reasoning and written/verbal communication"]},
+  {d:"Interpersonal and Communication Skills",s:"ICS4",n:"Complex Communication — Serious News",l:["Delivers serious news and prognostic information to a patient's family","Delivers serious news while assessing what the patient's family understands about the clinical condition","Delivers serious news and prognostic information while adjusting communication based on the family's understanding","Tailors communication of serious news based on the family's needs, preferences, and degree of clinical uncertainty","Role models empathic communication of serious news and serves as a peer resource for others"]}
+];
+
+const DC = {
+  "Patient Care":"#3b82f6","Medical Knowledge":"#8b5cf6",
+  "Systems-Based Practice":"#10b981","Practice-Based Learning and Improvement":"#f59e0b",
+  "Professionalism":"#ef4444","Interpersonal and Communication Skills":"#0891b2"
+};
+
+// ══════════════════════════════════════════════
+//  RECORDING STATE
+// ══════════════════════════════════════════════
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, isRec = false, secs = 0, tInt = null, mInt = null;
+let ax = null, an = null, mstr = null;
+let finalTx = '', interimTx = '';
+
+// ── Init ──
+window.addEventListener('DOMContentLoaded', () => {
+  loadKey();
+  if (!SR) {
+    document.getElementById('recBtn').disabled = true;
+    const t = document.getElementById('browserTip');
+    t.className = 'tip warn';
+    t.innerHTML = '⚠ Speech recognition not available — use <strong>Chrome</strong> or <strong>Edge</strong>. You can still paste a transcript directly.';
+  }
+  document.getElementById('tbox').addEventListener('input', refreshBtn);
+});
+
+// ── Toggle recording ──
+function toggleRec() { isRec ? stopRec() : startRec(); }
+
+async function startRec() {
+  if (!SR) return;
+  setRecErr('');
+  try {
+    mstr = await navigator.mediaDevices.getUserMedia({ audio: true });
+    ax = new (window.AudioContext || window.webkitAudioContext)();
+    const src = ax.createMediaStreamSource(mstr);
+    an = ax.createAnalyser(); an.fftSize = 32; src.connect(an);
+    mInt = setInterval(tickMeter, 80);
+  } catch (e) {
+    setRecErr('Microphone access denied: ' + e.message);
+    return;
+  }
+
+  rec = new SR();
+  rec.continuous = true; rec.interimResults = true; rec.lang = 'en-US';
+
+  rec.onresult = e => {
+    interimTx = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      e.results[i].isFinal ? (finalTx += t + ' ') : (interimTx += t);
+    }
+    renderLive(); renderBox();
+  };
+
+  rec.onerror = e => {
+    if (e.error !== 'aborted' && e.error !== 'no-speech')
+      setRecErr('Recognition error: ' + e.error);
+  };
+
+  rec.onend = () => { if (isRec) { try { rec.start(); } catch (_) {} } };
+  rec.start(); isRec = true;
+
+  secs = 0;
+  tInt = setInterval(() => { secs++; document.getElementById('tmr').textContent = fmt(secs); }, 1000);
+  document.getElementById('recBtn').className = 'rec-btn on';
+  document.getElementById('recBtn').textContent = '⏹';
+  document.getElementById('recSt').textContent = 'Recording & transcribing… click to stop';
+  document.getElementById('liveBox').className = 'live on';
+  setStep(2);
+}
+
+function stopRec() {
+  isRec = false;
+  if (rec) { rec.onend = null; rec.stop(); rec = null; }
+  if (interimTx.trim()) { finalTx += interimTx + ' '; interimTx = ''; }
+  if (mstr) { mstr.getTracks().forEach(t => t.stop()); mstr = null; }
+  if (ax)   { ax.close(); ax = null; }
+  clearInterval(mInt); clearInterval(tInt); resetMeter();
+
+  document.getElementById('recBtn').className = 'rec-btn';
+  document.getElementById('recBtn').textContent = '🎙';
+  document.getElementById('recSt').textContent = `Stopped (${fmt(secs)}) — review transcript →`;
+  document.getElementById('liveBox').className = 'live';
+  document.getElementById('liveBox').textContent = finalTx.trim() || 'No speech detected.';
+
+  renderBox(); refreshBtn();
+  if (finalTx.trim()) setStep(3);
+}
+
+function tickMeter() {
+  if (!an) return;
+  const buf = new Uint8Array(an.frequencyBinCount);
+  an.getByteFrequencyData(buf);
+  const lv = Math.min(buf.reduce((a, v) => a + v, 0) / buf.length / 80, 1);
+  for (let i = 0; i < 16; i++) {
+    const s = document.getElementById('m' + i), on = lv >= (i + 1) / 16;
+    s.style.background = on ? (i < 10 ? '#10b981' : i < 13 ? '#f59e0b' : '#ef4444') : 'var(--border)';
+    s.style.height = on ? '19px' : '9px';
+  }
+}
+
+function resetMeter() {
+  for (let i = 0; i < 16; i++) {
+    const s = document.getElementById('m' + i);
+    s.style.background = 'var(--border)'; s.style.height = '10px';
+  }
+}
+
+function renderLive() {
+  document.getElementById('liveBox').textContent = (finalTx + interimTx).trim() || 'Listening…';
+}
+
+function renderBox() {
+  const b = document.getElementById('tbox');
+  b.value = (finalTx + (interimTx ? `[…${interimTx}]` : '')).trim();
+  b.scrollTop = b.scrollHeight;
+  refreshBtn();
+}
+
+function refreshBtn() {
+  const clean = document.getElementById('tbox').value.replace(/\[….*?\]/g, '').trim();
+  document.getElementById('aBtn').disabled = clean.length < 10;
+}
+
+function fmt(s) { return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
+function setRecErr(msg) {
+  document.getElementById('recErr').innerHTML = msg
+    ? `<div class="err-box">${msg}</div>` : '';
+}
+
+// ══════════════════════════════════════════════
+//  ANALYSIS
+// ══════════════════════════════════════════════
+async function doAnalyze() {
+  const apiKey = getKey();
+  if (!apiKey) {
+    document.getElementById('analyzeErr').innerHTML = '<div class="err-box">⚠ Please enter your Anthropic API key in the bar at the top of the page.</div>';
+    document.getElementById('apiKey').focus();
+    return;
+  }
+
+  const tx = document.getElementById('tbox').value.replace(/\[….*?\]/g, '').trim();
+  if (!tx) return;
+
+  const btn = document.getElementById('aBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spin"></div> Analyzing…';
+  document.getElementById('analyzeErr').innerHTML = '';
+  document.getElementById('results').innerHTML = '';
+
+  const mj = JSON.stringify(MS.map(m => ({
+    sub: m.s, domain: m.d, name: m.n,
+    levels: m.l.map((l, i) => `Level ${i + 1}: ${l}`)
+  })), null, 2);
+
+  const sys = `You are an expert medical educator specializing in ACGME Neonatal-Perinatal Medicine (NPM) fellowship assessment. Analyze feedback conversations and map content to NPM Milestones 2.0. Only include subcompetencies genuinely addressed. Return ONLY valid JSON, no markdown, no preamble.\n\nMilestones:\n${mj}`;
+
+  const usr = `Analyze this transcript and map to NPM milestones:\n"""\n${tx}\n"""\n\nReturn JSON:\n{"summary":{"overallObservation":"2-3 sentences","primaryStrengths":[],"primaryGaps":[]},"milestoneMatches":[{"sub":"PC1","domain":"Patient Care","name":"...","assignedLevel":3,"levelRationale":"...","matchedAnchors":["..."],"transcriptEvidence":"...","feedbackGaps":["..."]}]}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        system: sys,
+        messages: [{ role: 'user', content: usr }]
+      })
+    });
+
+    // Read the raw response text first so we can always show it on error
+    const rawText = await res.text();
+
+    if (!res.ok) {
+      let msg = 'HTTP ' + res.status;
+      try { const e = JSON.parse(rawText); msg = e.error?.message || msg; } catch (_) { msg = rawText.slice(0, 300) || msg; }
+      throw new Error(msg);
+    }
+
+    // Parse the API envelope
+    let data;
+    try { data = JSON.parse(rawText); }
+    catch (_) { throw new Error('API returned non-JSON response: ' + rawText.slice(0, 300)); }
+
+    const modelText = data?.content?.[0]?.text;
+    if (!modelText) throw new Error('API response had no text content. Full response: ' + JSON.stringify(data).slice(0, 300));
+
+    // Strip markdown fences the model may wrap around JSON
+    const cleaned = modelText
+      .replace(/^```json\s*/i, '')
+      .replace(/^```\s*/i, '')
+      .replace(/\s*```$/i, '')
+      .trim();
+
+    // Find the outermost { } in case there is any leading/trailing text
+    const jsonStart = cleaned.indexOf('{');
+    const jsonEnd   = cleaned.lastIndexOf('}');
+    if (jsonStart === -1 || jsonEnd === -1) {
+      throw new Error('Model did not return a JSON object. Raw output: ' + cleaned.slice(0, 400));
+    }
+    const jsonStr = cleaned.slice(jsonStart, jsonEnd + 1);
+
+    let result;
+    try { result = JSON.parse(jsonStr); }
+    catch (parseErr) { throw new Error('JSON parse failed (' + parseErr.message + '). Raw JSON string: ' + jsonStr.slice(0, 400)); }
+
+    renderResults(result);
+    setStep(4);
+
+  } catch (e) {
+    document.getElementById('analyzeErr').innerHTML = `<div class="err-box">Analysis failed: ${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '⚡ Analyze Milestones';
+    refreshBtn();
+  }
+}
+
+// ══════════════════════════════════════════════
+//  RENDER RESULTS
+// ══════════════════════════════════════════════
+function renderResults(r) {
+  const el = document.getElementById('results');
+  const { summary: s, milestoneMatches: mm } = r;
+  const avg = mm.length
+    ? (mm.reduce((a, m) => a + m.assignedLevel, 0) / mm.length).toFixed(1)
+    : '—';
+
+  const chip = (txt, cls) => `<span class="chip ${cls}">${txt}</span>`;
+
+  el.innerHTML = `
+    <div class="summary">
+      <div class="stat">
+        <div class="stat-v">${mm.length}</div>
+        <div class="stat-l">Domains found</div>
+      </div>
+      <div class="vdiv"></div>
+      <div class="stat">
+        <div class="stat-v">${avg}</div>
+        <div class="stat-l">Avg level</div>
+      </div>
+      <div class="vdiv"></div>
+      <div class="obs">
+        <div class="obs-txt">${s.overallObservation}</div>
+        <div class="chips">
+          ${(s.primaryStrengths||[]).map(x => chip('✓ ' + x, 'chip-g')).join('')}
+          ${(s.primaryGaps||[]).map(x => chip('△ ' + x, 'chip-a')).join('')}
+        </div>
+      </div>
+    </div>
+    ${mm.map(m => {
+      const c = DC[m.domain] || '#3b82f6';
+      const dots = Array.from({length:5}, (_,i) =>
+        `<div class="ldot" style="background:${i < m.assignedLevel ? c : 'var(--border)'}"></div>`
+      ).join('');
+      const anchors = (m.matchedAnchors||[]).map(a =>
+        `<span class="achip" style="background:${c}20;border-color:${c}44;color:${c}">${a}</span>`
+      ).join('');
+      const gaps = (m.feedbackGaps||[]).map(g =>
+        `<div class="gitem"><span style="flex-shrink:0">△</span>${g}</div>`
+      ).join('');
+
+      return `
+        <div class="mcard">
+          <div class="mhead">
+            <div>
+              <div class="mname">${m.name}</div>
+              <div class="msub" style="color:${c}">${m.sub} · ${m.domain}</div>
+            </div>
+            <div class="lvl-badge">
+              <div class="ldots">${dots}</div>
+              <div class="lnum" style="color:${c}">L${m.assignedLevel}</div>
+            </div>
+          </div>
+          <div class="mbody">
+            ${m.transcriptEvidence ? `
+              <div>
+                <div class="slbl">Evidence from transcript</div>
+                <div class="evid" style="border-left-color:${c}66">"${m.transcriptEvidence}"</div>
+              </div>` : ''}
+            ${anchors ? `
+              <div>
+                <div class="slbl">Matched behavioral anchors</div>
+                <div>${anchors}</div>
+              </div>` : ''}
+            ${m.levelRationale ? `
+              <div>
+                <div class="slbl">Level rationale</div>
+                <div class="rat">${m.levelRationale}</div>
+              </div>` : ''}
+            ${gaps ? `
+              <div>
+                <div class="slbl">Feedback gaps / next steps</div>
+                <div style="display:flex;flex-direction:column;gap:4px">${gaps}</div>
+              </div>` : ''}
+          </div>
+        </div>`;
+    }).join('')}`;
+}
+
+// ══════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════
+function setStep(n) {
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('step' + i);
+    el.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
+  }
+}
+
+function clearTx() {
+  finalTx = ''; interimTx = '';
+  document.getElementById('tbox').value = '';
+  document.getElementById('liveBox').textContent = 'Transcript appears here as you speak…';
+  document.getElementById('liveBox').className = 'live';
+  refreshBtn();
+}
+
+function resetAll() {
+  if (isRec) stopRec();
+  clearTx();
+  secs = 0;
+  document.getElementById('tmr').textContent = '0:00';
+  document.getElementById('recBtn').className = 'rec-btn';
+  document.getElementById('recBtn').textContent = '🎙';
+  document.getElementById('recSt').textContent = 'Click to start recording';
+  document.getElementById('recErr').innerHTML = '';
+  document.getElementById('analyzeErr').innerHTML = '';
+  document.getElementById('results').innerHTML = '';
+  resetMeter();
+  setStep(1);
+}
+</script>
+</body>
+</html>
