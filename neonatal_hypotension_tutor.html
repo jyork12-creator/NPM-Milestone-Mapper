@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neonatal Hypotension — Socratic Tutor</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f5f3;
+    --bg-tertiary: #eeede9;
+    --text-primary: #1a1a18;
+    --text-secondary: #6b6b67;
+    --border: #e0dfd8;
+    --border-strong: #c8c7c0;
+    --green-bg: #e1f5ee;
+    --green-text: #085041;
+    --green-mid: #0f6e56;
+    --green-dark: #085041;
+    --red-bg: #fcebeb;
+    --red-text: #791f1f;
+    --red-mid: #a32d2d;
+    --amber-bg: #faeeda;
+    --amber-text: #633806;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --font: -apple-system, 'Segoe UI', system-ui, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-primary: #1c1c1a;
+      --bg-secondary: #252523;
+      --bg-tertiary: #2e2e2b;
+      --text-primary: #f0efe8;
+      --text-secondary: #9e9d96;
+      --border: #3a3a36;
+      --border-strong: #525250;
+      --green-bg: #04342c;
+      --green-text: #9fe1cb;
+      --green-mid: #1d9e75;
+      --green-dark: #5dcaa5;
+      --red-bg: #501313;
+      --red-text: #f7c1c1;
+      --red-mid: #e24b4a;
+      --amber-bg: #412402;
+      --amber-text: #fac775;
+    }
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+
+  #app {
+    width: 100%;
+    max-width: 700px;
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    border: 0.5px solid var(--border);
+    padding: 2rem;
+  }
+
+  .wordmark {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 1.75rem;
+  }
+  .wordmark-icon {
+    width: 28px; height: 28px;
+    background: var(--green-mid);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .wordmark-icon svg { width: 16px; height: 16px; fill: #fff; }
+  .wordmark-text { font-size: 13px; font-weight: 500; color: var(--text-secondary); letter-spacing: 0.03em; }
+
+  .phase { display: none; }
+  .phase.active { display: block; }
+
+  .timer-bar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    border: 0.5px solid var(--border);
+    margin-bottom: 1.5rem;
+  }
+  .timer-label { font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+  .timer-display { font-size: 14px; font-weight: 500; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .timer-display.urgent { color: var(--red-mid); }
+  .progress-wrap { height: 4px; background: var(--border); border-radius: 2px; flex: 1; }
+  .progress-fill { height: 100%; background: var(--green-mid); border-radius: 2px; transition: width 1s linear; }
+  .progress-fill.urgent { background: var(--red-mid); }
+
+  .case-card {
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .case-label {
+    font-size: 11px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--green-mid); margin-bottom: 8px;
+  }
+  .case-text { font-size: 14px; line-height: 1.8; color: var(--text-primary); }
+
+  .intro-heading { font-size: 20px; font-weight: 500; color: var(--text-primary); margin-bottom: 6px; }
+  .intro-sub { font-size: 14px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 1rem; }
+
+  .meta-row {
+    display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 1.5rem;
+  }
+  .meta-pill {
+    font-size: 12px; color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border);
+    border-radius: 20px; padding: 4px 12px;
+  }
+
+  .q-header { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+  .q-badge {
+    font-size: 12px; font-weight: 500; color: var(--text-secondary);
+    background: var(--bg-secondary); border: 0.5px solid var(--border);
+    border-radius: 20px; padding: 3px 10px; white-space: nowrap;
+  }
+  .q-text { font-size: 15px; font-weight: 500; color: var(--text-primary); line-height: 1.65; margin-bottom: 1.25rem; }
+
+  .options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 1.25rem; }
+  .opt-btn {
+    text-align: left;
+    background: var(--bg-primary);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    font-size: 14px; font-family: var(--font);
+    color: var(--text-primary); cursor: pointer; line-height: 1.55;
+    transition: border-color 0.12s, background 0.12s;
+  }
+  .opt-btn:hover { border-color: var(--border-strong); background: var(--bg-secondary); }
+  .opt-btn.selected { border-color: var(--green-mid); background: var(--green-bg); color: var(--green-text); }
+
+  textarea {
+    width: 100%; border: 0.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 14px; font-size: 14px; font-family: var(--font);
+    color: var(--text-primary); background: var(--bg-primary);
+    resize: vertical; min-height: 88px; outline: none; line-height: 1.6;
+    margin-bottom: 1.25rem;
+    transition: border-color 0.12s;
+  }
+  textarea:focus { border-color: var(--border-strong); }
+
+  .nav-row { display: flex; align-items: center; justify-content: space-between; margin-top: 0.5rem; }
+  .skip-link { font-size: 13px; color: var(--text-secondary); cursor: pointer; text-decoration: underline; background: none; border: none; font-family: var(--font); }
+  .skip-link:hover { color: var(--text-primary); }
+
+  button.primary {
+    background: var(--green-mid); border: none;
+    color: #fff; border-radius: var(--radius-md);
+    padding: 9px 22px; font-size: 14px; font-weight: 500;
+    cursor: pointer; font-family: var(--font);
+    transition: background 0.12s;
+  }
+  button.primary:hover { background: var(--green-dark); }
+
+  button.secondary {
+    background: var(--bg-primary);
+    border: 0.5px solid var(--border-strong);
+    color: var(--text-primary);
+    border-radius: var(--radius-md);
+    padding: 9px 22px; font-size: 14px;
+    cursor: pointer; font-family: var(--font);
+    transition: background 0.12s;
+  }
+  button.secondary:hover { background: var(--bg-secondary); }
+
+  .big-start {
+    background: var(--green-mid); color: #fff; border: none;
+    border-radius: var(--radius-md); padding: 12px 40px;
+    font-size: 15px; font-weight: 500; cursor: pointer; font-family: var(--font);
+    transition: background 0.12s;
+  }
+  .big-start:hover { background: var(--green-dark); }
+  .start-row { display: flex; justify-content: flex-start; margin-top: 1.5rem; }
+
+  .divider { border: none; border-top: 0.5px solid var(--border); margin: 1.5rem 0; }
+
+  .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+  .metric { background: var(--bg-secondary); border-radius: var(--radius-md); padding: 16px; text-align: center; }
+  .metric-val { font-size: 28px; font-weight: 500; color: var(--text-primary); }
+  .metric-val.green { color: var(--green-mid); }
+  .metric-val.red { color: var(--red-mid); }
+  .metric-lbl { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+  .section-title { font-size: 12px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.75rem; }
+
+  .review-item {
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 14px 16px; margin-bottom: 10px;
+  }
+  .review-q { font-size: 14px; font-weight: 500; color: var(--text-primary); margin-bottom: 10px; line-height: 1.55; }
+  .review-row { display: flex; gap: 8px; font-size: 13px; margin-bottom: 5px; align-items: flex-start; }
+  .review-label { color: var(--text-secondary); min-width: 78px; flex-shrink: 0; }
+  .review-val { color: var(--text-primary); line-height: 1.5; }
+
+  .badge {
+    display: inline-block; font-size: 11px; font-weight: 500;
+    padding: 2px 9px; border-radius: 10px;
+  }
+  .badge-correct { background: var(--green-bg); color: var(--green-text); }
+  .badge-incorrect { background: var(--red-bg); color: var(--red-text); }
+  .badge-skipped { background: var(--bg-secondary); color: var(--text-secondary); border: 0.5px solid var(--border); }
+
+  .summary-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 1.5rem; }
+
+  @media (max-width: 500px) {
+    #app { padding: 1.25rem; }
+    .summary-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="wordmark">
+    <div class="wordmark-icon">
+      <svg viewBox="0 0 16 16"><path d="M8 2a6 6 0 100 12A6 6 0 008 2zm0 1.5a4.5 4.5 0 110 9 4.5 4.5 0 010-9zm0 2a.75.75 0 00-.75.75v2.69L5.47 10.22a.75.75 0 101.06 1.06l2-2a.75.75 0 00.22-.53V6.25A.75.75 0 008 5.5z"/></svg>
+    </div>
+    <span class="wordmark-text">Neonatal hypotension — Socratic tutor</span>
+  </div>
+
+  <!-- INTRO PHASE -->
+  <div id="phase-intro" class="phase active">
+    <div class="intro-heading">Clinical reasoning session</div>
+    <p class="intro-sub">Work through 10 questions on neonatal hypotension management. Answers are scored silently — your performance summary appears at the end.</p>
+    <div class="meta-row">
+      <span class="meta-pill">15-minute timer</span>
+      <span class="meta-pill">10 questions</span>
+      <span class="meta-pill">Multiple choice + short answer</span>
+    </div>
+    <div class="case-card">
+      <div class="case-label">Clinical case</div>
+      <div class="case-text">A 28-week, 950-gram male infant is now 12 hours old, born via emergency cesarean section for maternal preeclampsia. He required intubation at delivery (Apgars 3 and 6). He is on conventional ventilation with FiO₂ 0.45. The bedside nurse calls you because mean arterial pressure (MAP) has dropped to 22 mmHg over the past hour (gestational age–based threshold: MAP should approximate gestational age in weeks). He appears pale and mottled. Capillary refill is 4 seconds. Urine output has been minimal.</div>
+    </div>
+    <p style="font-size:14px;color:var(--text-secondary);line-height:1.7;">Read the case carefully before beginning. The timer starts when you click <strong style="color:var(--text-primary);">Begin session</strong>.</p>
+    <div class="start-row"><button class="big-start" onclick="startSession()">Begin session</button></div>
+  </div>
+
+  <!-- QUIZ PHASE -->
+  <div id="phase-quiz" class="phase">
+    <div class="timer-bar">
+      <span class="timer-label">Time remaining</span>
+      <div class="progress-wrap"><div class="progress-fill" id="progress-fill" style="width:100%"></div></div>
+      <span class="timer-display" id="timer-display">15:00</span>
+    </div>
+    <div class="case-card" style="margin-bottom:1rem;padding:1rem 1.25rem;">
+      <div class="case-label">Case reminder</div>
+      <div class="case-text" style="font-size:13px;">28-week, 950g male, 12 hrs old. MAP 22 mmHg (threshold ≈ GA in weeks). Pale, mottled. CRT 4 sec. Minimal UO. Intubated, FiO₂ 0.45.</div>
+    </div>
+    <div class="q-header">
+      <span class="q-badge" id="q-counter">Question 1 of 10</span>
+    </div>
+    <div class="q-text" id="q-text"></div>
+    <div id="q-body"></div>
+    <div class="nav-row">
+      <button class="skip-link" onclick="skipQuestion()">Skip</button>
+      <button class="primary" id="next-btn" onclick="nextQuestion()">Next</button>
+    </div>
+  </div>
+
+  <!-- SUMMARY PHASE -->
+  <div id="phase-summary" class="phase">
+    <div style="margin-bottom:1.5rem;">
+      <div style="font-size:18px;font-weight:500;color:var(--text-primary);margin-bottom:4px;">Session complete</div>
+      <div style="font-size:14px;color:var(--text-secondary);" id="summary-time-used"></div>
+    </div>
+    <div class="summary-grid">
+      <div class="metric"><div class="metric-val green" id="s-correct">0</div><div class="metric-lbl">Correct</div></div>
+      <div class="metric"><div class="metric-val red" id="s-incorrect">0</div><div class="metric-lbl">Incorrect / skipped</div></div>
+      <div class="metric"><div class="metric-val" id="s-pct">0%</div><div class="metric-lbl">Score</div></div>
+    </div>
+    <hr class="divider">
+    <div class="section-title">Question review</div>
+    <div id="review-list"></div>
+    <div class="summary-actions">
+      <button class="primary" onclick="restartSession()">Restart session</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const QUESTIONS = [
+  {
+    type: "mc",
+    text: "Based on the infant's MAP of 22 mmHg, mottled appearance, and poor urine output, what is the most appropriate first step in management?",
+    options: [
+      "Immediately initiate a high-dose dopamine infusion.",
+      "Perform a comprehensive assessment of multiple clinical parameters before and during treatment.",
+      "Administer a rapid 40 mL/kg fluid bolus to reach the MAP threshold.",
+      "Wait for the next scheduled lab draw to check serum lactate levels."
+    ],
+    correct: 1,
+    answer: "Perform a comprehensive assessment of multiple clinical parameters before and during treatment."
+  },
+  {
+    type: "free",
+    text: "What is the recommended initial volume for a crystalloid bolus (e.g., normal saline) when managing a VLBW infant with suspected hypovolemia?",
+    answer: "10 to 20 mL/kg"
+  },
+  {
+    type: "mc",
+    text: "If the infant remains hypotensive and poorly perfused after adequate volume expansion, which medication is most frequently used as the first-line inotropic agent?",
+    options: ["Dopamine", "Milrinone", "Vasopressin", "Dobutamine"],
+    correct: 0,
+    answer: "Dopamine"
+  },
+  {
+    type: "free",
+    text: "In the management of this 950-gram infant, what is the primary clinical goal of cardiovascular support?",
+    answer: "Optimizing tissue perfusion"
+  },
+  {
+    type: "mc",
+    text: "If the infant's hypotension becomes refractory (unresponsive to volume and standard catecholamine doses), which management strategy has shown an increase in usage and effectiveness in recent clinical trends?",
+    options: [
+      "Discontinuing all respiratory support.",
+      "Adding low-dose hydrocortisone.",
+      "Increasing dobutamine to 30 µg/kg/min.",
+      "Restricting all fluid intake."
+    ],
+    correct: 1,
+    answer: "Adding low-dose hydrocortisone."
+  },
+  {
+    type: "free",
+    text: "In a randomized trial for neonates with volume-resistant hypotension, what was the specific dose of hydrocortisone used every 6 hours?",
+    answer: "0.5 mg/kg"
+  },
+  {
+    type: "mc",
+    text: "Regarding current management trends from 2001 to 2012, which medication's usage has significantly decreased for ELBW infants?",
+    options: ["Hydrocortisone", "Vasopressin", "Dobutamine", "Dopamine"],
+    correct: 2,
+    answer: "Dobutamine"
+  },
+  {
+    type: "free",
+    text: "What is the specific clinical term for hypotension that does not respond to standard doses of volume and vasopressors?",
+    answer: "Refractory hypotension"
+  },
+  {
+    type: "mc",
+    text: "When considering vasopressin or its analogues for a VLBW infant, what is the primary reason these agents are typically reserved for rescue management?",
+    options: [
+      "They cause significant hypotension.",
+      "They are only available in oral form.",
+      "There is a lack of high-quality evidence from large randomized controlled trials.",
+      "They are contraindicated in infants under 30 weeks."
+    ],
+    correct: 2,
+    answer: "There is a lack of high-quality evidence from large randomized controlled trials."
+  },
+  {
+    type: "free",
+    text: "Besides Mean Arterial Pressure (MAP), which bedside clinical indicator should be monitored to assess the success of the management plan?",
+    answer: "Capillary refill time"
+  }
+];
+
+const TOTAL_SECS = 15 * 60;
+let currentQ = 0, userAnswers = [], timerInterval = null, secsLeft = TOTAL_SECS, startTime = null;
+
+function showPhase(id) {
+  document.querySelectorAll('.phase').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function startSession() {
+  userAnswers = new Array(QUESTIONS.length).fill(null);
+  currentQ = 0; secsLeft = TOTAL_SECS; startTime = Date.now();
+  showPhase('phase-quiz');
+  renderQuestion();
+  timerInterval = setInterval(tickTimer, 1000);
+}
+
+function tickTimer() {
+  secsLeft--;
+  updateTimerDisplay();
+  if (secsLeft <= 0) { clearInterval(timerInterval); showSummary(); }
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(secsLeft / 60), s = secsLeft % 60;
+  const el = document.getElementById('timer-display');
+  const fill = document.getElementById('progress-fill');
+  el.textContent = m + ':' + String(s).padStart(2, '0');
+  fill.style.width = Math.round((secsLeft / TOTAL_SECS) * 100) + '%';
+  if (secsLeft <= 120) { el.classList.add('urgent'); fill.classList.add('urgent'); }
+}
+
+function renderQuestion() {
+  const q = QUESTIONS[currentQ];
+  document.getElementById('q-counter').textContent = 'Question ' + (currentQ + 1) + ' of ' + QUESTIONS.length;
+  document.getElementById('q-text').textContent = q.text;
+  const body = document.getElementById('q-body');
+  if (q.type === 'mc') {
+    const saved = userAnswers[currentQ];
+    body.innerHTML = '<div class="options">' + q.options.map((opt, i) =>
+      '<button class="opt-btn' + (saved === i ? ' selected' : '') + '" onclick="selectOpt(this,' + i + ')">' +
+      String.fromCharCode(65 + i) + '. ' + opt + '</button>'
+    ).join('') + '</div>';
+  } else {
+    const saved = userAnswers[currentQ] || '';
+    body.innerHTML = '<textarea id="free-input" placeholder="Type your answer here..." oninput="saveFree(this.value)">' + saved + '</textarea>';
+  }
+  document.getElementById('next-btn').textContent = currentQ === QUESTIONS.length - 1 ? 'Finish' : 'Next';
+}
+
+function selectOpt(btn, idx) {
+  document.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  userAnswers[currentQ] = idx;
+}
+
+function saveFree(val) { userAnswers[currentQ] = val.trim(); }
+
+function skipQuestion() { userAnswers[currentQ] = null; advance(); }
+
+function nextQuestion() {
+  if (QUESTIONS[currentQ].type === 'free') {
+    const el = document.getElementById('free-input');
+    if (el) userAnswers[currentQ] = el.value.trim() || null;
+  }
+  if (currentQ === QUESTIONS.length - 1) { clearInterval(timerInterval); showSummary(); }
+  else { advance(); }
+}
+
+function advance() {
+  currentQ++;
+  if (currentQ >= QUESTIONS.length) { clearInterval(timerInterval); showSummary(); }
+  else { renderQuestion(); }
+}
+
+function gradeAnswer(q, ans) {
+  if (ans === null || ans === undefined || ans === '') return 'skipped';
+  if (q.type === 'mc') return ans === q.correct ? 'correct' : 'incorrect';
+  const a = ans.toLowerCase().replace(/[^a-z0-9]/g, ' ').trim();
+  const correct = q.answer.toLowerCase().replace(/[^a-z0-9]/g, ' ').trim();
+  const keywords = correct.split(' ').filter(w => w.length > 3);
+  const hits = keywords.filter(k => a.includes(k));
+  return hits.length >= Math.ceil(keywords.length * 0.5) ? 'correct' : 'incorrect';
+}
+
+function showSummary() {
+  const elapsed = Math.round((Date.now() - startTime) / 1000);
+  document.getElementById('summary-time-used').textContent =
+    'Time used: ' + Math.floor(elapsed / 60) + ' min ' + (elapsed % 60) + ' sec';
+  let correct = 0, incorrect = 0;
+  const reviewHTML = QUESTIONS.map((q, i) => {
+    const grade = gradeAnswer(q, userAnswers[i]);
+    if (grade === 'correct') correct++; else incorrect++;
+    const badge = grade === 'correct'
+      ? '<span class="badge badge-correct">Correct</span>'
+      : grade === 'incorrect'
+        ? '<span class="badge badge-incorrect">Incorrect</span>'
+        : '<span class="badge badge-skipped">Skipped</span>';
+    const ua = userAnswers[i];
+    const userAns = (ua === null || ua === undefined || ua === '')
+      ? '<em style="color:var(--text-secondary)">No answer given</em>'
+      : (q.type === 'mc' ? String.fromCharCode(65 + ua) + '. ' + q.options[ua] : ua);
+    return '<div class="review-item">' +
+      '<div class="review-q">Q' + (i + 1) + '. ' + q.text + '</div>' +
+      '<div class="review-row"><span class="review-label">Your answer</span><span class="review-val">' + userAns + '</span></div>' +
+      '<div class="review-row"><span class="review-label">Correct answer</span><span class="review-val">' + q.answer + '</span></div>' +
+      '<div class="review-row"><span class="review-label">Result</span><span class="review-val">' + badge + '</span></div>' +
+      '</div>';
+  }).join('');
+  document.getElementById('s-correct').textContent = correct;
+  document.getElementById('s-incorrect').textContent = incorrect;
+  document.getElementById('s-pct').textContent = Math.round((correct / QUESTIONS.length) * 100) + '%';
+  document.getElementById('review-list').innerHTML = reviewHTML;
+  showPhase('phase-summary');
+}
+
+function restartSession() { clearInterval(timerInterval); showPhase('phase-intro'); }
+</script>
+</body>
+</html>
